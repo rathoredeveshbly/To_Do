@@ -1,19 +1,22 @@
 import React, { Fragment, useState } from 'react'
 import Pagination from './Pagination'
+import { useDispatch, useSelector } from 'react-redux'
+import { actionsCreators } from './Redux'
 
 const Dashboard = () => {
-    const friendListNew = [{ id: 1, name: 'Tom' }, { id: 2, name: 'Jerry' }, { id: 3, name: 'Draco' }]
-    const [friendList, setFriendList] = useState(friendListNew)
+    const state = useSelector(state=>state.friendList)
+    const dispatch = useDispatch()
+    const [friendList, setFriendList] = useState(state)
     const [debounce, setDebounce] = useState()
     const [name, setName] = useState('')
-
+    
     const [currentPage, setCurrentPage] = useState(1)
-    const [postPerPage] = useState(10)
+    const [postPerPage] = useState(5)
 
     const addFriend = () =>{
-        let friendListCopy = [...friendList]
-        friendListCopy.push({id:friendList.length+1,name}) 
-        setFriendList(friendListCopy)
+        if(name)
+            dispatch(actionsCreators.addFriend(name))  
+        setName('')
     }
 
     const handleAction = (id, type) => {
@@ -35,10 +38,11 @@ const Dashboard = () => {
                 break;
         }
         setFriendList(friendListCopy)
+        dispatch({type:'LOCAL_STORAGE',payload:friendListCopy})
     }
 
     const searchName = e => {
-        let friendListCopy = [...friendList]
+        let friendListCopy = [...state]
         let searchedValue = e.target.value
 
         clearInterval(debounce);
@@ -49,7 +53,7 @@ const Dashboard = () => {
                     return name.toLowerCase().includes(searchedValue.toLowerCase())
                 });
             } else {
-                searchedName = friendListNew
+                searchedName = state
             }
             setFriendList(searchedName)
         }, 400)
@@ -65,7 +69,7 @@ const Dashboard = () => {
     return (<Fragment>
         <div className="container">
             <input placeholder='Enter your friends name' onChange={(e) => { searchName(e) }} />
-            <input placeholder='Enter name to add' onChange={(e)=>setName(e.target.value)}/>
+            <input placeholder='Enter name to add' value={name} onChange={(e)=>setName(e.target.value)}/>
             <button onClick={()=>{addFriend()}}>Add Friend</button>
             {currentFriends.map(friend => {
                 return <div key={friend.id} className='row'>
@@ -74,10 +78,10 @@ const Dashboard = () => {
                         <p>is your friend.</p>
                     </div>
                     <div className='icons' onClick={() => { handleAction(friend.id, 'favorite') }}>favorite</div>
-                    <div className='icons' onClick={() => { handleAction(friend.id, 'delete') }}>Delete</div>
+                    <div className='icons' onClick={()=>{ handleAction(friend.id, 'delete') }}>Delete</div>
                 </div>
             })}
-            {currentFriends.length>4 && <Pagination
+            {friendList.length>4 && <Pagination
         postsPerPage={postPerPage}
         totalPosts={friendList.length}
         handlePagination={handlePagination}
